@@ -1,0 +1,9 @@
+data("ToothGrowth")
+View(ToothGrowth)
+
+filtered_tg <- filter(ToothGrowth, dose == 0.5)
+arrange(filtered_tg,supp)
+
+arrange(filter(ToothGrowth, dose == 0.5),len)
+
+

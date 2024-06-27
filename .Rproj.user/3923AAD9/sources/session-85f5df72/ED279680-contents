@@ -1,0 +1,129 @@
+---
+title: "Bookselling dashboard"
+author: "Faurika"
+date: "2024-06-27"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+# Periksa apakah file dataset ada
+dataset_path <- "bookselling.csv"  # Sesuaikan dengan path file Anda
+if (!file.exists(dataset_path)) {
+  cat("File dataset tidak ditemukan. Pastikan path file benar.\n")
+  # Stop rendering the document
+  knit_exit()
+}
+```
+
+## Pendahuluan
+
+Aplikasi ini dibuat menggunakan shiny untuk memvisualisasikan data buku terlaris di amazon dari tahun 2009 hingga 2019.
+
+## Cara Menjalankan aplikasi
+1. pastikan memiliki R dan RStudio yang terinstall
+2. Install packet yang diperlukan untuk menjalankan perintah berikut di console R:
+
+```r
+  install.packages(c("shiny","ggplot2","dplyr","DT","RColorBrewer"))
+```
+
+3. Unduh dan salin file `bookselling.R` dan dataset `bookselling.csv` ke directory kerja anda
+4. buka `bookselling.R` di RStudio.
+5. Jalankan aplikasi dengan menekan tombol "Run App" di RStudio atau menjalankan perintah berikut di console R:
+
+```r
+shiny::runApp()
+
+```
+
+## Kode dan penjelasan
+
+```r
+# Masukkan kode `app.R` di sini dengan komentar
+library(shiny)
+library(ggplot2)
+library(dplyr)
+library(DT)
+library(RColorBrewer)
+
+# Load dataset
+bestselling_books <- read.csv("path_to_your_dataset.csv")
+
+# Define UI
+ui <- fluidPage(
+  titlePanel("Amazon Top 50 Bestselling Books 2009 - 2019"),
+  sidebarLayout(
+    sidebarPanel(
+      selectInput("year", "Select Year:", choices = unique(bestselling_books$year), selected = unique(bestselling_books$year)[1])
+    ),
+    mainPanel(
+      tabsetPanel(
+        tabPanel("Trend Penjualan", plotOutput("salesTrend")),
+        tabPanel("Penulis Populer", plotOutput("popularAuthors")),
+        tabPanel("Genre Populer", plotOutput("popularGenres")),
+        tabPanel("Data Table", dataTableOutput("dataTable"))
+      )
+    )
+  )
+)
+
+# Define Server
+server <- function(input, output) {
+  
+  # Trend Penjualan Berdasarkan Tahun
+  output$salesTrend <- renderPlot({
+    yearly_sales <- bestselling_books %>%
+      group_by(year) %>%
+      summarize(num_books = n())
+    
+    ggplot(yearly_sales, aes(x = year, y = num_books)) +
+      geom_line(color = "blue", size = 1) +
+      geom_point(color = "blue", size = 3) +
+      labs(title = "Trend Penjualan Berdasarkan Tahun", x = "Tahun", y = "Jumlah Buku")
+  })
+  
+  # Penulis Paling Populer
+  output$popularAuthors <- renderPlot({
+    popular_authors <- bestselling_books %>%
+      group_by(author) %>%
+      summarize(num_books = n()) %>%
+      arrange(desc(num_books)) %>%
+      head(10)
+    
+    ggplot(popular_authors, aes(x = reorder(author, num_books), y = num_books, fill = author)) +
+      geom_bar(stat = "identity") +
+      coord_flip() +
+      labs(title = "Penulis Paling Populer", x = "Penulis", y = "Jumlah Buku") +
+      scale_fill_brewer(palette = "Set3") + 
+      theme_minimal()
+  })
+  
+  # Genre Paling Populer
+  output$popularGenres <- renderPlot({
+    popular_genres <- bestselling_books %>%
+      group_by(genre) %>%
+      summarize(num_books = n()) %>%
+      arrange(desc(num_books))
+    
+    ggplot(popular_genres, aes(x = reorder(genre, num_books), y = num_books, fill = genre)) +
+      geom_bar(stat = "identity") +
+      coord_flip() +
+      labs(title = "Genre Paling Populer", x = "Genre", y = "Jumlah Buku") +
+      scale_fill_brewer(palette = "Pastel1") +
+      theme_minimal()
+  })
+  
+  # Tabel Data
+  output$dataTable <- renderDataTable({
+    datatable(bestselling_books)
+  })
+}
+
+# Run the application
+shinyApp(ui = ui, server = server)
+
+```
+
+
